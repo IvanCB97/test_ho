@@ -1,0 +1,47 @@
+1. Cambio en linea 151 de _architecture, funcion reader
+    cambio if not t: por if not t.all()
+
+2. Cambio en linea 119 de _architecture, funcion __database_transformation
+    cambio return self._database_transformation(path, temporalfile) por return _db_trans_
+
+3. Cambio en linea 23-27 de _databasetrans, funcion default_dbt
+    trato la excepcion TypeError a la hora de escribir datos en los txt, esto se debe a que algun .vtt no tiene un formato
+    correcto y tiene alguna linea 'None', por lo tanto lazna un excepcion al intentar copiarlo
+    		try:
+			for line in raw:
+			file.writelines(f'{line}\n')
+		except TypeError:
+			print("archivo vtt {} no se puede convertir" .format(outpath))
+                	return outpath
+
+4. Cambio en linea 37 de _databasetrans def __get_text
+    Cambio del tiempo de lectura de texto del .vtt, cambiamos a 00:59:59 (telediario completo)
+    def __get_text(route, translate=False, tmodel='google', time_limit='00:59:59'):
+
+5. Cambio en linea 44-79 de __get_text
+    Tratamiento de excepcion StopIteration debido a que hay archivos que al leerlas lanzan esta excepcion (dependen del tiempo de lectura)
+            	try:
+		            with open(route, 'r', encoding='utf-8') as file:
+			        for line in file:
+
+                            ...
+
+
+                except StopIteration:
+		            print("archivo vtt {} no se puede convertir, fallo en __get_text" .format(route))
+		            return -1,-1,-1
+
+6. Se añade al constructor la variable time_limit que indica hasta que momento del telediario hay que realizar la segmentacion
+	1. linea 29 de _architecture.py
+			time_limit='00:05:00'
+	2. linea 121 en _architecture.py (añadimos time_limit a la funcion y a la llamada)
+			def __database_transformation(self, path: str, time_limit: str):
+        		try:
+            		_db_trans_ = self._database_transformation(path, temporalfile, time_limit)
+	3. linea 23 de myseg.py (añadimos las variables en la funcion de Segmentation_60)
+			def _database_transformation(path, op, time_limit):
+        		"""Esta funcion realiza la parte inicial del proceso, convierte los vtt en txt"""
+        		return ns.default_dbt(path, op, time_limit)
+	4. linea 20 de _databasetrans.py (añadimos la variable a la funcion final)
+			def default_dbt(inpath, outpath, time_limit):
+				raw, _, timevector = __get_text(inpath, False, 'google', time_limit)
